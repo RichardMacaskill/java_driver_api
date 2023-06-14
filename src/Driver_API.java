@@ -1,4 +1,5 @@
 import org.neo4j.driver.*;
+import org.neo4j.driver.Record;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -11,57 +12,58 @@ public class Driver_API {
 
 
     public static void main(String[] args) {
-        String uri = System.getenv("NEO4J_URI");
+        String uri =  System.getenv("NEO4J_URI");
         String password = System.getenv("NEO4J_PWD");
+
+//        List<String> list = new ArrayList<String>();
+//        list.add("user1");
+//        list.add("user2");
+//        list.add("user3");
+//        list.add("user4");
+//        list.add("user5");
 
         List<String> list = new ArrayList<String>();
         list.add("moviesuser");
-        list.add("neo4j");
-        list.add("footballtransfersuser");
-        list.add("moviesuser");
-        
+//        list.add("neo4j");
+//        list.add("footballtransfersuser");
+//        list.add("moviesuser");
+//        list.add("footballtransfersuser");
+
         String[] user = list.toArray(new String[0]);
 
-        DoStuff(uri,user,password);
+
+        DoStuffWithSessions(uri, user, password);
 
     }
-    private static void DoStuff(String URI,String[] userNames, String Password)
-    {
 
-        var manager = AuthTokenManagers.expirationBased(() -> {
-            Date now = new Date(new Date().getTime());
-            Date expDate = new Date(new Date().getTime() +100); //java.util.Date
-
-            Random rand = new Random();
-            int randomNum = rand.nextInt(4);
-           // System.out.println(now.toString());
-            System.out.println(expDate.toString());
-
-            var token = AuthTokens.basic(userNames[randomNum], Password);
-            return token.expiringAt(expDate.getTime()); // a new method on AuthToken introduced for the supplied expiration based AuthTokenManager implementation
-        });
+    private static void DoStuffWithSessions(String URI, String[] userNames, String Password) {
+        AuthToken[] myTokens = new AuthToken[5];
+        for (int i = 0; i < 1; i++) {
+            myTokens[i] = AuthTokens.basic(userNames[i], Password);
+        }
+        Driver driver = driver(URI);
 
 
-        try (Driver driver = driver(URI, manager)) {
+            for (int k = 0; k < 1; k++) {
 
-            for(int i=0; i < 1000 ; i++) {
-                var results = driver.executableQuery("MATCH (m:Movie) return m;")
-                        .withConfig(QueryConfig.builder().withRouting(RoutingControl.READ).build())
-                        .execute();
+                try (var session = driver.session(Session.class, myTokens[k]);) {
+                    for (int j = 0; j < 100; j++) {
+                    var greeting = session.executeRead(tx -> {
 
-                System.out.println(new StringBuilder().append((long) results.records().size()).append(" records returned").toString());
-
-                try {
-                    Thread.sleep(101);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
+                        var query = new Query("MATCH (m:Movie) return m.title as greeting;");
+                        var result = tx.run(query);
+                        return result.list().toString();
+                    });
+                    System.out.println(greeting + " " + j + " " + k)   ;
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
                 }
-
             }
-
         }
     }
-
-
-
 }
+
+
