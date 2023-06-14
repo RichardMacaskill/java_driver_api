@@ -45,9 +45,9 @@ public class Driver_API {
 
 
             for (int k = 0; k < 1; k++) {
-
+                for (int j = 0; j < 100; j++) {
                 try (var session = driver.session(Session.class, myTokens[k]);) {
-                    for (int j = 0; j < 100; j++) {
+
                     var greeting = session.executeRead(tx -> {
 
                         var query = new Query("MATCH (m:Movie) return m.title as greeting;");
